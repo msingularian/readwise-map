@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Readwise Intellectual Landscape — Tiago Forte</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+/* LAYOUT */
+.page-header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 20px 32px; display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+.page-title { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+.stat-pill { font-size: 12px; background: #f0f0f0; color: #555; padding: 3px 10px; border-radius: 20px; }
+.stat-pill span { font-weight: 600; color: #1a1a1a; }
+
+.tabs { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 0 32px; display: flex; gap: 0; overflow-x: auto; }
+.tab { font-size: 13px; font-weight: 500; padding: 14px 18px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; white-space: nowrap; transition: color 0.15s; }
+.tab:hover { color: #333; }
+.tab.active { color: #1a1a1a; border-bottom-color: #4F7FFF; font-weight: 600; }
+
+.content { padding: 28px 32px; max-width: 1100px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* CARDS & GRID */
+.section-title { font-size: 15px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+.section-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+
+.card { background: #fff; border-radius: 10px; padding: 20px; border: 1px solid #e8e8e8; }
+.card + .card { margin-top: 16px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/* THEME CLUSTERS */
+.cluster-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.cluster-card { border-radius: 8px; padding: 12px 14px; cursor: pointer; border: 1.5px solid transparent; transition: transform 0.15s, box-shadow 0.15s; }
+.cluster-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+.cluster-card.active { border-color: var(--accent); }
+.cluster-icon { font-size: 18px; margin-bottom: 6px; }
+.cluster-title { font-size: 12px; font-weight: 600; color: #1a1a1a; margin-bottom: 3px; }
+.cluster-sub { font-size: 10px; color: #666; line-height: 1.4; }
+.cluster-bar { margin-top: 8px; height: 3px; border-radius: 2px; opacity: 0.4; }
+
+.detail-box { background: #f8f8f8; border-radius: 10px; padding: 16px 20px; margin-top: 4px; display: none; animation: fadeIn 0.2s ease; }
+.detail-box.visible { display: block; }
+.detail-head { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.detail-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.detail-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 5px; margin-top: 10px; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #efefef; color: #333; }
+blockquote { font-size: 12px; line-height: 1.65; font-style: italic; color: #555; border-left: 3px solid var(--accent, #999); padding-left: 10px; margin: 6px 0; }
+.books-list { font-size: 11px; color: #666; line-height: 1.7; }
+.close-x { float: right; cursor: pointer; color: #aaa; font-size: 14px; line-height: 1; }
+.close-x:hover { color: #333; }
+
+/* Cluster color themes */
+.c1{--accent:#4F7FFF;background:rgba(79,127,255,0.07);}
+.c2{--accent:#FF6B35;background:rgba(255,107,53,0.07);}
+.c3{--accent:#8B5CF6;background:rgba(139,92,246,0.07);}
+.c4{--accent:#10B981;background:rgba(16,185,129,0.07);}
+.c5{--accent:#F59E0B;background:rgba(245,158,11,0.07);}
+.c6{--accent:#EC4899;background:rgba(236,72,153,0.07);}
+.c7{--accent:#06B6D4;background:rgba(6,182,212,0.07);}
+.c8{--accent:#84CC16;background:rgba(132,204,22,0.07);}
+.c9{--accent:#F97316;background:rgba(249,115,22,0.07);}
+.c10{--accent:#6366F1;background:rgba(99,102,241,0.07);}
+.c11{--accent:#14B8A6;background:rgba(20,184,166,0.07);}
+.c12{--accent:#EF4444;background:rgba(239,68,68,0.07);}
+.c13{--accent:#A78BFA;background:rgba(167,139,250,0.07);}
+
+/* TEMPORAL ARC */
+.year-row { display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+.year-row:last-child { border-bottom: none; }
+.year-label { font-size: 22px; font-weight: 800; color: #ddd; min-width: 56px; padding-top: 2px; }
+.year-count { font-size: 11px; color: #aaa; min-width: 80px; padding-top: 4px; }
+.year-themes { flex: 1; }
+.year-theme-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.ytheme { font-size: 11px; padding: 3px 9px; border-radius: 10px; background: #f0f0f0; color: #444; }
+.ytheme.new { background: #e8f5e9; color: #2e7d32; }
+.ytheme.faded { background: #fce4ec; color: #c62828; text-decoration: line-through; opacity: 0.7; }
+.year-note { font-size: 11px; color: #888; line-height: 1.5; margin-top: 4px; }
+
+/* BOOKS TABLE */
+.books-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.books-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #999; border-bottom: 2px solid #eee; }
+.books-table td { padding: 8px 10px; border-bottom: 1px solid #f2f2f2; vertical-align: top; }
+.books-table tr:hover td { background: #fafafa; }
+.rank-num { font-size: 10px; color: #ccc; font-weight: 700; min-width: 24px; }
+.book-title-cell { font-weight: 500; color: #1a1a1a; line-height: 1.4; }
+.book-author-cell { color: #888; }
+.count-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.count-bar { height: 8px; border-radius: 4px; background: #4F7FFF; min-width: 2px; }
+.count-num { font-size: 11px; font-weight: 600; color: #1a1a1a; min-width: 28px; }
+.cat-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; font-weight: 600; text-transform: uppercase; }
+.cat-books { background: #e8f0fe; color: #1a56db; }
+.cat-articles { background: #fef3c7; color: #92400e; }
+.cat-tweets { background: #e0f2fe; color: #0369a1; }
+
+/* STATS MINI */
+.stat-box { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px 20px; text-align: center; }
+.stat-big { font-size: 32px; font-weight: 800; color: #1a1a1a; line-height: 1; }
+.stat-label { font-size: 11px; color: #888; margin-top: 4px; line-height: 1.4; }
+.stat-sub { font-size: 10px; color: #bbb; margin-top: 2px; }
+
+/* RECENT vs PERSISTENT */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.compare-col { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px; }
+.compare-head { font-size: 12px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid; }
+.compare-head.new { border-color: #10B981; color: #10B981; }
+.compare-head.persistent { border-color: #4F7FFF; color: #4F7FFF; }
+.compare-head.faded { border-color: #EF4444; color: #EF4444; }
+.compare-item { font-size: 11px; color: #444; padding: 5px 0; border-bottom: 1px solid #f5f5f5; line-height: 1.4; }
+.compare-item:last-child { border-bottom: none; }
+.compare-item strong { color: #1a1a1a; }
+
+/* BLIND SPOTS */
+.blind-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.blind-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px 18px; border-left: 4px solid var(--bc, #ddd); }
+.blind-head { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+.blind-why { font-size: 11px; color: #888; margin-bottom: 10px; line-height: 1.5; }
+.blind-recs { font-size: 11px; color: #444; line-height: 1.7; }
+.blind-recs strong { color: #1a1a1a; }
+
+/* FINGERPRINT */
+.fingerprint-box { background: #fff; border: 1px solid #e8e8e8; border-left: 4px solid #4F7FFF; border-radius: 10px; padding: 20px 24px; margin-top: 16px; }
+.fp-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4F7FFF; margin-bottom: 10px; }
+.fp-text { font-size: 13px; line-height: 1.7; color: #444; }
+.fp-text + .fp-text { margin-top: 10px; }
+.fp-text strong { color: #1a1a1a; }
+
+/* CHARTS */
+.chart-wrap { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 20px; }
+.chart-title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; }
+
+/* MISC */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; margin-top: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">Readwise Intellectual Landscape</div>
+  <div class="stat-pill"><span>30,920</span> highlights</div>
+  <div class="stat-pill"><span>1,243</span> books & sources</div>
+  <div class="stat-pill"><span>6,554</span> Reader documents</div>
+  <div class="stat-pill"><span>2018 – 2026</span></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('themes')">Themes</div>
+  <div class="tab" onclick="showTab('arc')">Temporal Arc</div>
+  <div class="tab" onclick="showTab('books')">Top Books</div>
+  <div class="tab" onclick="showTab('mix')">Content Mix</div>
+  <div class="tab" onclick="showTab('recent')">Recent vs. Persistent</div>
+  <div class="tab" onclick="showTab('blind')">Blind Spots</div>
+  <div class="tab" onclick="showTab('fingerprint')">Fingerprint</div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════ THEMES ═══════════════════════════════ -->
+<div id="panel-themes" class="panel active">
+  <div class="section-title">13 Thematic Clusters</div>
+  <div class="section-sub">Derived from ~1,900 sampled highlights across 2018–2026. Click any cluster to expand.</div>
+  <div class="cluster-grid" id="clusterGrid"></div>
+  <div class="detail-box" id="clusterDetail"></div>
+</div>
+
+<!-- ═══════════════════════════════ ARC ═══════════════════════════════ -->
+<div id="panel-arc" class="panel">
+  <div class="section-title">Temporal Arc</div>
+  <div class="section-sub">How reading themes evolved year by year. Bar height = highlight count that year.</div>
+
+  <div class="chart-wrap" style="margin-bottom:20px;">
+    <div class="chart-title">Highlights per Year</div>
+    <canvas id="arcChart" height="80"></canvas>
+  </div>
+
+  <div class="card">
+    <div id="arcRows"></div>
+  </div>
+
+  <div class="fingerprint-box" style="margin-top:16px;">
+    <div class="fp-title">Narrative Arc</div>
+    <div class="fp-text">The arc begins as a <strong>knowledge worker's toolkit obsession</strong>. From 2018 through 2020, the reading was intensely focused inward and infrastructural — how do we capture, organize, and retrieve information? The massive 2018 count (9,699 highlights) reflects a period of voracious intake, building the conceptual foundations of the Second Brain methodology. Commonplace books, hypertext history, PARA, Zettelkasten, Progressive Summarization — these were not casual interests but the raw material of an emerging framework for knowledge work.</div>
+    <div class="fp-text">The middle years — 2021 through 2023 — mark a <strong>broadening into the world, and then friction</strong>. The creator economy and internet culture critique (2021) showed an outward turn: who profits from attention, how algorithms distort time and discourse. Then came a pivot toward community as infrastructure (2022), and in 2023 a sharp interrogation of the whole PKM project itself — "PKM burnout" appeared as a theme while climate crisis and personal resilience crowded in from outside. This period reads like someone who built the tools, shipped the work, watched the culture absorb and distort the ideas, and started asking harder questions. The snap-forward worldview concept — that old mental models can't be incrementally updated, they must be abandoned and rebuilt — feels like the hinge point of the entire arc.</div>
+    <div class="fp-text">The final years — 2024 through 2026 — show a person who has moved <strong>from systems to wisdom, and from wisdom to reckoning</strong>. The 2024 preoccupation with stepping stones, naturalistic decision-making, and Buddhist acceptance suggests someone deliberately releasing the goal-directed mindset that animated the earlier work. By 2025, the attention turns to grief, thick vs. thin desires, and the question of what it means to be upstream of culture rather than predicted by it — a direct inversion of the 2018 question of how to organize information. And 2026 lands squarely in the AI disruption reckoning: not the excited augmentation framing of 2021, but the harder economic and existential questions.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ BOOKS ═══════════════════════════════ -->
+<div id="panel-books" class="panel">
+  <div class="section-title">Top Books by Highlight Density</div>
+  <div class="section-sub">Full count across all 30,920 highlights. Density = how generative a source was for you, not just how long it was.</div>
+
+  <div class="three-col" style="margin-bottom:20px;">
+    <div class="stat-box"><div class="stat-big">136</div><div class="stat-label">books with 50+ highlights</div><div class="stat-sub">deeply formative sources</div></div>
+    <div class="stat-box"><div class="stat-big">495</div><div class="stat-label">books with 10+ highlights</div><div class="stat-sub">genuine engagement</div></div>
+    <div class="stat-box"><div class="stat-big">261</div><div class="stat-label">books with 1 highlight</div><div class="stat-sub">sampled or skimmed</div></div>
+  </div>
+
+  <div class="chart-wrap" style="margin-bottom:20px;">
+    <div class="chart-title">Top 20 Books — Highlight Count</div>
+    <canvas id="booksChart" height="120"></canvas>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="books-table">
+      <thead><tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Highlights</th>
+        <th>Type</th>
+      </tr></thead>
+      <tbody id="booksTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MIX ═══════════════════════════════ -->
+<div id="panel-mix" class="panel">
+  <div class="section-title">Content Mix</div>
+  <div class="section-sub">What types of content make up your reading diet, and how deeply you engage with each format.</div>
+
+  <div class="two-col" style="margin-bottom:20px;">
+    <div class="chart-wrap">
+      <div class="chart-title">Highlights by Content Type</div>
+      <canvas id="hlChart" height="200"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">Reader Documents by Category</div>
+      <canvas id="readerChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="font-size:13px;margin-bottom:12px;">Highlights Breakdown</div>
+      <div id="hlBreakdownRows"></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="font-size:13px;margin-bottom:12px;">Key Insight</div>
+      <div style="font-size:12px;color:#555;line-height:1.7;">
+        <p>Books make up just <strong>25%</strong> of unique sources (308 out of 1,243) but account for <strong>77%</strong> of all highlights — an average of <strong>~77 highlights per book</strong>.</p>
+        <p style="margin-top:10px;">Articles are the reverse: 888 unique sources but average only <strong>~6.5 highlights each</strong>. You save a lot of articles but most are lightly annotated.</p>
+        <p style="margin-top:10px;">PDFs are near-absent (18 documents in Reader). If you consume academic papers, white papers, or long-form reports, almost none of it is flowing through Readwise.</p>
+        <p style="margin-top:10px;">Podcasts and audiobooks are effectively absent (9 podcasts, 1 epub). Audio learning is not captured in your second brain at all.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ RECENT ═══════════════════════════════ -->
+<div id="panel-recent" class="panel">
+  <div class="section-title">Recent vs. Persistent</div>
+  <div class="section-sub">Comparing June 2025–June 2026 highlights against 2022–2023 baseline. What's new, what's endured, what's faded.</div>
+
+  <div class="compare-grid">
+    <div class="compare-col">
+      <div class="compare-head new">🌱 New in 2025–26</div>
+      <div id="newItems"></div>
+    </div>
+    <div class="compare-col">
+      <div class="compare-head persistent">🔵 Persistent across eras</div>
+      <div id="persistentItems"></div>
+    </div>
+    <div class="compare-col">
+      <div class="compare-head faded">🌫 Faded since 2022–23</div>
+      <div id="fadedItems"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="section-title" style="font-size:13px;margin-bottom:10px;">The Structural Parallel</div>
+    <div style="font-size:12px;color:#555;line-height:1.7;">In 2022–23, the dominant systemic concern was <strong>climate crisis and planetary discontinuity</strong> — brittle infrastructure, the "transapocalyptic" present, ruggedization strategies. In 2025–26, the same structural anxiety has fully migrated to <strong>AI-driven labor displacement</strong>. The worry is identical: irreversible change arriving faster than institutions can adapt, with individuals left to figure out their own positioning. The response has shifted from civic/geographic ruggedization to professional/intellectual positioning — but the underlying fear is structurally the same question: <em>"What do I do when the world I built my competence for no longer exists?"</em></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ BLIND SPOTS ═══════════════════════════════ -->
+<div id="panel-blind" class="panel">
+  <div class="section-title">Blind Spots & Recommendations</div>
+  <div class="section-sub">Content types and domains conspicuously absent from your intellectual diet, with specific suggestions for broadening it.</div>
+  <div class="blind-grid" id="blindGrid"></div>
+</div>
+
+<!-- ═══════════════════════════════ FINGERPRINT ═══════════════════════════════ -->
+<div id="panel-fingerprint" class="panel">
+  <div class="section-title">Intellectual Fingerprint</div>
+  <div class="section-sub">What makes this library distinctive — the underlying questions, preoccupations, and sensibility.</div>
+
+  <div class="fingerprint-box">
+    <div class="fp-title">The Central Preoccupation</div>
+    <div class="fp-text">The deepest throughline isn't productivity — it's the question of <strong>how knowledge and capability get transmitted across time and between people</strong>. Babylonian ritual humiliation of kings as civic memory technology. J Dilla's rhythmic innovations transmitted through software rather than apprenticeship. Age-mixed play as a natural learning architecture. The Second Brain as externalized cognition. AI tools potentially breaking the chain of skill transmission for the first time in history. These aren't random reads — they're all working on the same underlying question.</div>
+  </div>
+
+  <div class="fingerprint-box" style="border-left-color: #8B5CF6;">
+    <div class="fp-title" style="color:#8B5CF6;">The Structural Pattern</div>
+    <div class="fp-text">A mind that <strong>moves constantly between the highest-order theory and the lowest-level implementation</strong>. Terrence Deacon's dense philosophy of emergent causation sits beside Twitter threads on AI agent management frameworks. Richard Rudd's mystical Gene Keys sits beside Dan Charnas's precision analysis of professional kitchen design. Bessel van der Kolk's clinical neuroscience of trauma sits beside Priya Parker's design principles for gatherings. This isn't eclecticism — it reflects someone always asking: what does the highest-order theory look like, and what does the lowest-level implementation look like, and what is the relationship between them?</div>
+  </div>
+
+  <div class="fingerprint-box" style="border-left-color: #10B981;">
+    <div class="fp-title" style="color:#10B981;">The Curiosity Signature</div>
+    <div class="fp-text"><strong>Following curiosity without justification, trusting that connection will emerge later</strong>. Philippine colonial history, J Dilla's MPC, ancient Athenian axones, the true history of chocolate — these are not instrumental reads for building the Second Brain methodology. They're a person who genuinely believes that the more distant and unexpected the connection, the more valuable it is when it arrives. This is, not incidentally, exactly what you teach. The library is a living demonstration of the thesis.</div>
+  </div>
+
+  <div class="fingerprint-box" style="border-left-color: #F59E0B;">
+    <div class="fp-title" style="color:#F59E0B;">The Arc of 8 Years</div>
+    <div class="fp-text">Started with <strong>tools</strong> (how to capture, organize, retrieve). Moved through <strong>community</strong> (who benefits from attention, how groups cohere). Hit <strong>friction</strong> (PKM burnout, climate anxiety, worldview discontinuity). Sought <strong>wisdom</strong> (stepping stones, Buddhist acceptance, grief work). Arrived at <strong>reckoning</strong> (AI disruption, domain expertise, what can't be automated). The arc is a story of someone who started by trying to build better tools for thinking, found that the world changed faster than the tools could keep up, and arrived at questions about meaning, grief, place, and what kind of knowledge can't be outsourced.</div>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────
+const clusterData = [
+  {id:1,cls:'c1',icon:'🧠',title:'Knowledge & Second Brain',sub:'Note-taking, systems, externalizing memory',strength:95,ideas:['External memory systems','Progressive summarization','Intermediate packets','Mise en place as metaphor','Capture → creation distinction'],quote:'"The box is not a substitute for creating. The box is the raw index of your preparation." — Twyla Tharp',books:'Building a Second Brain · The Creative Habit (Twyla Tharp) · How to Take Smart Notes · Everything in Its Place (Dan Charnas) · Getting Things Done'},
+  {id:2,cls:'c2',icon:'🤖',title:'AI & Future of Work',sub:'Transformation, agents, dead economy thesis',strength:90,ideas:['AI degrading skill formation','Agent management frameworks','Organizational redesign','Buyer journey disruption','"Too early or too late"'],quote:'"The technology is degrading the expertise of the next generation of workers at the same time it\'s competing with them for their jobs." — The Dead Economy Theory',books:'The Dead Economy Theory · Managing OpenClaw Agent Teams · Reshaping the Tree · Executive Briefing: AI and the New B2B Sales Funnel'},
+  {id:3,cls:'c3',icon:'✨',title:'Consciousness & Desire',sub:'Philosophy of mind, emergent causation, wanting',strength:70,ideas:['Desire untangled from fear','Alignment with truth, beauty, goodness','Insight vs. somatic transformation','Consciousness as substrate','Limits of materialism'],quote:'"When desire is clarified... what remains is a wanting that is naturally aligned with truth, beauty, and goodness." — Daniel Thorson',books:'The Human Alignment Problem (Daniel Thorson) · Incomplete Nature (Terrence Deacon) · The Gene Keys (Richard Rudd)'},
+  {id:4,cls:'c4',icon:'🌿',title:'Trauma & Healing',sub:'Somatic memory, nervous system, attachment',strength:80,ideas:['Body as keeper of trauma','Limits of insight therapy','Self-regulation & co-regulation','Developmental neglect','Somatic vs. cognitive understanding'],quote:'"Sherry knew that picking her skin was destructive and related to her mother\'s neglect, but understanding the source made no difference in helping her control it." — Bessel van der Kolk',books:'The Body Keeps the Score (van der Kolk) · It Didn\'t Start With You (Mark Wolynn) · Reboot (Jerry Colonna)'},
+  {id:5,cls:'c5',icon:'🎓',title:'Education & Child Learning',sub:'Self-directed learning, play, age-mixing',strength:65,ideas:['Age-mixed play environments','Play as primary learning mode','Self-directed vs. imposed curriculum','Older children teaching younger','Intrinsic motivation vs. schooling'],quote:'"By interacting with younger children, older ones practice leadership and nurturance... Older children also gain deeper understandings by teaching younger ones." — Peter Gray',books:'Free to Learn (Peter Gray) · The Happy Sleeper · Beyond Acceptance'},
+  {id:6,cls:'c6',icon:'🎨',title:'Creativity & Making',sub:'Creative process, craft, constraint, iteration',strength:75,ideas:['Preparation precedes creativity','Constraint as generative force','Technology enabling new forms','Discipline over inspiration','Fast iteration as quality path'],quote:'"The sprint gives our startups a superpower: They can fast-forward into the future to see their finished product before making any expensive commitments." — Jake Knapp',books:'The Creative Habit (Twyla Tharp) · Dilla Time (Dan Charnas) · Sprint · A Beautiful Constraint · Genius (James Gleick)'},
+  {id:7,cls:'c7',icon:'🌀',title:'Community & Gathering',sub:'Group design, social architecture, hosting',strength:60,ideas:['Group size thresholds (12, 30, 150)','Host responsibility for conditions','Gathering as designed experience','Community vs. audience','Intimacy at scale'],quote:'"When I speak to conference organizers, the ideal range I hear again and again is somewhere between 100 and 150 people." — Priya Parker',books:'The Art of Gathering (Priya Parker) · Emergent Strategy (adrienne maree brown)'},
+  {id:8,cls:'c8',icon:'📢',title:'Storytelling & Marketing',sub:'Narrative, brand clarity, communication',strength:60,ideas:['Story reduces cognitive load','Customer as hero, brand as guide','Clarity over cleverness','Failure to communicate value','Universal narrative structure'],quote:'"The first mistake brands make is they fail to focus on aspects that help people survive and thrive. The second is causing customers to burn too many calories to understand their offer." — Donald Miller',books:'Building a StoryBrand (Donald Miller) · The Millionaire Messenger (Burchard) · This Is Personal (Brennan Dunn)'},
+  {id:9,cls:'c9',icon:'🏭',title:'Operations & Systems',sub:'Theory of Constraints, flow, product dev',strength:72,ideas:['Theory of Constraints (Goldratt)','Product development flow','Critical chain project management','Behavior as function of reinforcement','WIP limits and throughput'],quote:'"The Goal is not to improve one measurement in isolation. The goal is to make money now, as well as in the future." — Eliyahu Goldratt',books:'The Principles of Product Development Flow (Reinertsen) · Critical Chain · It\'s Not Luck · The Choice · Bringing Out the Best in People (Daniels)'},
+  {id:10,cls:'c10',icon:'🌍',title:'History, Empire & Ritual',sub:'Colonialism, ancient history, writing as tech',strength:50,ideas:['US colonialism in Philippines','Babylonian Akitu Festival','Athenian axones as info tech','Democracy coexisting with domination','Writing and political order'],quote:'"We who spend our leisure hours sorting live media from dead would do well to keep in mind that the distinction between young media and old can be just as interesting." — Julian Dibbell',books:'In Our Image (Stanley Karnow) · Glut (Alex Wright) · Track Changes (Kirschenbaum) · The Filing Cabinet (Craig Robertson)'},
+  {id:11,cls:'c11',icon:'⌛',title:'Meaning & Life Review',sub:'Purpose, mortality, identity over time',strength:65,ideas:['Life review as identity reconstruction','Irreversible thresholds of aging','Finding new life stories after loss','"Catching up" as identity work','Purpose as decision guide'],quote:'"Every one of us who advances across any irreversible threshold of aging must find new life stories." — William Damon',books:'A Round of Golf With My Father (William Damon) · Finite and Infinite Games (Carse) · Reboot (Jerry Colonna)'},
+  {id:12,cls:'c12',icon:'🔬',title:'Cognitive Science & Mind',sub:'Attention, intuition, how the brain works',strength:68,ideas:['Mind is flat — no hidden depths','Recognition-primed decision-making','Extended mind & environment','How emotions are constructed','Humor as cognition'],quote:'"The mind is not a hidden store of memories, beliefs, images, or feelings, but a pattern of fleeting thoughts, emotions, and experiences." — Nick Chater',books:'Mind Is Flat (Nick Chater) · How Emotions Are Made (Lisa Feldman Barrett) · The Extended Mind (Annie Murphy Paul) · The World Beyond Your Head (Crawford)'},
+  {id:13,cls:'c13',icon:'🚀',title:'Science Fiction & Culture',sub:'Speculative futures, music, politics through story',strength:45,ideas:['Bodily autonomy in resource scarcity','Rhythm as political medium','Technology enabling new art forms','Prediction aesthetic vs. postmodernism','Imagining post-human community'],quote:'"A woman using her own uterus rather than an artificial womb to grow a child was a luxury of resources the Station simply didn\'t have." — Arkady Martine',books:'A Memory Called Empire (Arkady Martine) · Dilla Time (Dan Charnas) · Stealing Fire (Kotler & Wheal)'},
+];
+const clusterColors = {c1:'#4F7FFF',c2:'#FF6B35',c3:'#8B5CF6',c4:'#10B981',c5:'#F59E0B',c6:'#EC4899',c7:'#06B6D4',c8:'#84CC16',c9:'#F97316',c10:'#6366F1',c11:'#14B8A6',c12:'#EF4444',c13:'#A78BFA'};
+
+const yearData = [
+  {year:2018,count:9699,themes:['PKM foundations & commonplace book theory','Entrepreneurial finance & cash management','Information history (hypertext, Gutenberg, Xanadu)','Design philosophy & knowledge architecture'],newThemes:['PKM as practice','Knowledge as capital'],faded:[]},
+  {year:2019,count:5723,themes:['Personal journaling & reflective writing','Time affluence vs. time poverty','PARA & Second Brain system-building','Creator monetization & passion economy'],newThemes:['Time-vs-money tradeoffs','Progressive Summarization'],faded:[]},
+  {year:2020,count:784,themes:['Async & remote work communication','Zettelkasten & bidirectional note linking','Embodied cognition & wu-wei','Metamodernism & philosophy of knowledge'],newThemes:['Zettelkasten / atomic notes','Async-first culture','Post-postmodern philosophy'],faded:['Entrepreneurial finance']},
+  {year:2021,count:1879,themes:['Internet culture critique & algorithmic distortion','Creator economy deepening','AI augmentation & superhistory','Higher education disruption'],newThemes:['AI as human augmentation layer','Superhistory concept','Education disruption'],faded:['Information history / hypertext']},
+  {year:2022,count:2535,themes:['Community building as business strategy','Operational business philosophy','Writing craft & authentic voice','Early generative AI as creative tool'],newThemes:['Community as business infrastructure','Belonging in digital spaces','Generative AI'],faded:['Zettelkasten system-building','Time affluence philosophy']},
+  {year:2023,count:2175,themes:['Climate crisis & personal ruggedization','PKM burnout & critique of compulsive capture','Worldview discontinuity & snap-forward thinking','AI as creative medium (exploratory)'],newThemes:['Climate migration & location strategy','PKM backlash','Discontinuous worldview'],faded:['Creator economy monetization','Async work culture']},
+  {year:2024,count:2557,themes:['Stepping stones & non-objective innovation','Naturalistic decision-making & expert intuition','Buddhist contemplative practice & acceptance','Cognitive science (humor, reading, intuition)'],newThemes:['Novelty search / exaptation','Recognition-primed decisions','Radical acceptance','Geopolitics & global trade'],faded:['PKM burnout critique','Climate ruggedization']},
+  {year:2025,count:1999,themes:['Prediction as cultural aesthetic','Being upstream in information flow','Grief as somatic & ancestral practice','Thick vs. thin desires / deep attention'],newThemes:['Prediction aesthetic','Upstream positioning','Grief work & somatic processing','Thick desires & anti-optimization'],faded:['Non-objective innovation framing','Geopolitics']},
+  {year:2026,count:1406,themes:['AI automating implementation','Domain expertise as the new moat','Attention economy critique & placefulness','AI economic disruption & labor displacement'],newThemes:['AI self-improvement & autonomous coding','Domain expertise vs. implementation','Dead economy theory','HTML brand & agent-readable deliverables'],faded:['Grief / somatic practice','Prediction aesthetic']},
+];
+
+const topBooks = [
+  {rank:1,count:734,title:'The Principles of Product Development Flow',author:'Donald G. Reinertsen',cat:'books'},
+  {rank:2,count:580,title:'Bringing Out the Best in People',author:'Aubrey C. Daniels',cat:'books'},
+  {rank:3,count:566,title:'The Essential Guide to Getting Your Book Published',author:'Arielle Eckstut & David Henry Sterry',cat:'books'},
+  {rank:4,count:504,title:'The Body Keeps the Score',author:'Bessel van der Kolk MD',cat:'books'},
+  {rank:5,count:462,title:'Glut',author:'Alex Wright',cat:'books'},
+  {rank:6,count:410,title:'The World Beyond Your Head',author:'Matthew B. Crawford',cat:'books'},
+  {rank:7,count:388,title:'The Untethered Soul',author:'Michael A. Singer',cat:'books'},
+  {rank:8,count:380,title:'Incomplete Nature',author:'Terrence W. Deacon',cat:'books'},
+  {rank:9,count:375,title:'Free to Learn',author:'Peter Gray',cat:'books'},
+  {rank:10,count:362,title:'It Didn\'t Start With You',author:'Mark Wolynn',cat:'books'},
+  {rank:11,count:337,title:'The Oxygen Advantage',author:'Patrick McKeown',cat:'books'},
+  {rank:12,count:328,title:'Critical Chain',author:'Eliyahu M. Goldratt',cat:'books'},
+  {rank:13,count:316,title:'The Inner Game of Work',author:'W. Timothy Gallwey',cat:'books'},
+  {rank:14,count:295,title:'Stealing Fire',author:'Steven Kotler & Jamie Wheal',cat:'books'},
+  {rank:15,count:291,title:'Emergent Strategy',author:'adrienne maree brown',cat:'books'},
+  {rank:16,count:280,title:'The Millionaire Messenger',author:'Brendon Burchard',cat:'books'},
+  {rank:17,count:272,title:'A Beautiful Constraint',author:'Adam Morgan & Mark Barden',cat:'books'},
+  {rank:18,count:270,title:'The Science of Managing Our Digital Stuff',author:'Ofer Bergman & Steve Whittaker',cat:'books'},
+  {rank:19,count:267,title:'Track Changes',author:'Matthew G. Kirschenbaum',cat:'books'},
+  {rank:20,count:262,title:'It\'s Not Luck',author:'Eliyahu M. Goldratt',cat:'books'},
+  {rank:21,count:256,title:'The Choice',author:'Eliyahu M. Goldratt',cat:'books'},
+  {rank:22,count:250,title:'The Extended Mind',author:'Annie Murphy Paul',cat:'books'},
+  {rank:23,count:243,title:'How Emotions Are Made',author:'Lisa Feldman Barrett',cat:'books'},
+  {rank:24,count:239,title:'Mind Is Flat',author:'Nick Chater',cat:'books'},
+  {rank:25,count:239,title:'Sprint',author:'Knapp, Zeratsky & Kowitz',cat:'books'},
+  {rank:26,count:234,title:'Finite and Infinite Games',author:'James Carse',cat:'books'},
+  {rank:27,count:224,title:'The Ethical Slut',author:'Hardy & Easton',cat:'books'},
+  {rank:28,count:221,title:'This Is Personal',author:'Brennan Dunn',cat:'books'},
+  {rank:29,count:216,title:'Leonardo Da Vinci',author:'Walter Isaacson',cat:'books'},
+  {rank:30,count:211,title:'Power and Prediction',author:'Agrawal, Gans & Goldfarb',cat:'books'},
+  {rank:31,count:211,title:'The Happy Sleeper',author:'Heather Turgeon & Julie Wright',cat:'books'},
+  {rank:32,count:205,title:'The Filing Cabinet',author:'Craig Robertson',cat:'books'},
+  {rank:33,count:198,title:'How to Take Smart Notes',author:'Sönke Ahrens',cat:'books'},
+  {rank:34,count:193,title:'The True History of Chocolate',author:'Sophie D. Coe & Michael D. Coe',cat:'books'},
+  {rank:35,count:188,title:'Prediction Machines',author:'Agrawal, Gans & Goldfarb',cat:'books'},
+  {rank:36,count:183,title:'The Startup Way',author:'Eric Ries',cat:'books'},
+  {rank:37,count:181,title:'Reboot',author:'Jerry Colonna',cat:'books'},
+  {rank:38,count:180,title:'Genius',author:'James Gleick',cat:'books'},
+  {rank:39,count:180,title:'The Race',author:'Eliyahu M. Goldratt',cat:'books'},
+  {rank:40,count:180,title:'Book',author:'Hugh McGuire & Brian O\'Leary',cat:'books'},
+];
+
+const blindSpots = [
+  {color:'#4F7FFF',icon:'📊',title:'Quantitative & Probabilistic Thinking',why:'No statistics, probability theory, or forecasting methodology visible despite deep interest in prediction and decision-making.',recs:'<strong>Superforecasting</strong> (Tetlock & Gardner) — calibrated prediction as practice.<br><strong>The Signal and the Noise</strong> (Nate Silver) — forecasting across domains.<br><strong>How to Measure Anything</strong> (Hubbard) — quantifying the "unmeasurable".<br><strong>Thinking in Bets</strong> (Annie Duke) — decision quality under uncertainty.'},
+  {color:'#10B981',icon:'🌿',title:'Non-Western Philosophy',why:'The library leans heavily Western despite personal connection to Brazil, Philippines, and Mexico. Buddhist practice appears but the underlying philosophy does not.',recs:'<strong>The Analects</strong> (Confucius) + commentary — relational ethics vs. individual virtue.<br><strong>Ubuntu Philosophy</strong> (Thaddeus Metz) — African personhood & community.<br><strong>Tao Te Ching</strong> with scholarly commentary — not the self-help version.<br><strong>Being-in-the-World</strong> (Dreyfus) — cross-cultural phenomenology.'},
+  {color:'#EC4899',icon:'📚',title:'Literary Fiction & Poetry (Systematic)',why:'Science fiction appears occasionally but literary fiction and poetry are nearly absent — despite a stated interest in writing craft and the fact that you teach through story.',recs:'<strong>Marilynne Robinson</strong> (Gilead, Housekeeping) — the only living novelist who writes at the intersection of theology, memory, and American identity.<br><strong>José Saramago</strong> — blindness, bureaucracy, democratic failure (connects to your Brazil identity).<br><strong>Mary Oliver poetry</strong> — attention as a spiritual and intellectual practice.<br><strong>Collected Poems</strong> (Wallace Stevens) — imagination as a way of knowing.'},
+  {color:'#F97316',icon:'🔬',title:'Hard Science & Natural History',why:'No biology, ecology, evolutionary theory, or deep time — despite interest in emergence, systems, and the philosophy of nature (Deacon).',recs:'<strong>The Selfish Gene</strong> (Dawkins) — still the best intro to evolutionary logic.<br><strong>Entangled Life</strong> (Merlin Sheldrake) — fungal networks as systems thinking.<br><strong>The Sixth Extinction</strong> (Kolbert) — connects your climate concern to deep biological time.<br><strong>An Immense World</strong> (Ed Yong) — sensory worlds of non-human creatures, stunning.'},
+  {color:'#8B5CF6',icon:'🏛️',title:'Political Philosophy & Institutional Design',why:'Political economy critique appears but not political philosophy proper — how societies decide things, build institutions, or reform them. You teach thousands of people; how they organize collectively seems relevant.',recs:'<strong>The Origins of Political Order</strong> (Fukuyama) — how institutions form and decay.<br><strong>Why Nations Fail</strong> (Acemoglu & Robinson) — inclusive vs. extractive institutions.<br><strong>The Life You Can Save</strong> (Peter Singer) — effective altruism and moral obligation to scale.<br><strong>Democracy May Not Exist</strong> (Astra Taylor) — the most honest recent critique.'},
+  {color:'#F59E0B',icon:'🗣️',title:'Primary Sources & Autobiography',why:'You read a lot of books about people and ideas, but almost no direct primary sources — memoirs, letters, diaries, or original texts. The closest is Leonardo Da Vinci (a biography, not his notebooks).',recs:'<strong>Leonardo\'s Notebooks</strong> (Da Vinci, translated) — the actual source, not a biography.<br><strong>The Diary of a Young Girl</strong> (Anne Frank) — the gold standard of what direct testimony can do.<br><strong>Narrative of the Life of Frederick Douglass</strong> — primary source on exactly the power/knowledge questions you highlight.<br><strong>The Letters of Vincent van Gogh</strong> — a creator\'s process in real time.'},
+  {color:'#06B6D4',icon:'🎵',title:'Music Theory & Sound',why:'Dilla Time is one of your most engaged books — but it approaches music analytically as a cultural historian. No music theory or listening practice appears anywhere.',recs:'<strong>This Is Your Brain on Music</strong> (Levitin) — neuroscience of musical experience.<br><strong>Musicophilia</strong> (Oliver Sacks) — music and the mind, case studies.<br><strong>How Music Works</strong> (David Byrne) — music as architecture and context, not just content.<br><strong>Silence</strong> (John Cage) — what happens when you remove the notes.'},
+  {color:'#EF4444',icon:'⚗️',title:'Academic Research (Peer-Reviewed)',why:'Only 18 PDFs in Reader — essentially zero engagement with the academic literature that underlies many of the books you highlight. You read the popularizations but not the sources.',recs:'Start with high-signal journals: <strong>Annual Review of Psychology</strong>, <strong>Perspectives on Psychological Science</strong>.<br><strong>Google Scholar Alerts</strong> on your top 5 topics — one paper/week.<br><strong>ResearchRabbit</strong> — maps citations so you can follow ideas upstream.<br>Consider: the books you loved most cite specific studies. Go read those studies.'},
+];
+
+const newItems = [
+  {text:'AI/labor displacement as primary systemic concern (replaced climate)'},
+  {text:'Practical AI workflow integration (agentic tools, domain expertise framing)'},
+  {text:'Parenting literature — a personal life-stage shift'},
+  {text:'Brain health / nootropics (creatine, cognitive performance biology)'},
+  {text:'Concrete AI capability benchmarking (what models can actually do today)'},
+];
+const persistentItems = [
+  {text:'Systemic disruption anxiety — "what do I do when my competence becomes obsolete?"'},
+  {text:'The limits of human knowledge management'},
+  {text:'Sci-fi novels as a thinking tool'},
+  {text:'Attention economy critique (Jenny Odell reappears in 2026)'},
+  {text:'Epistemic humility — the necessity of worldview updating'},
+  {text:'Inner development alongside professional development'},
+];
+const fadedItems = [
+  {text:'Climate/planetary crisis as primary intellectual focus — largely absent in 2025-26'},
+  {text:'PKM and note-taking methodology as an explicit subject of reflection'},
+  {text:'Travel / place / culture content'},
+  {text:'The "how do we govern the commons" political economy frame'},
+  {text:'Alex Steffen-style ruggedization and transapocalyptic framing'},
+];
+
+// ─── RENDER FUNCTIONS ────────────────────────────────────────────────
+
+// Tab switching
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Clusters
+let activeCluster = null;
+function renderClusters() {
+  const grid = document.getElementById('clusterGrid');
+  clusterData.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'cluster-card ' + c.cls;
+    el.id = 'cc-' + c.id;
+    el.innerHTML = `<div class="cluster-icon">${c.icon}</div><div class="cluster-title">${c.title}</div><div class="cluster-sub">${c.sub}</div><div class="cluster-bar" style="background:${clusterColors[c.cls]};width:${c.strength}%"></div>`;
+    el.addEventListener('click', () => openCluster(c));
+    grid.appendChild(el);
+  });
+}
+function openCluster(c) {
+  if (activeCluster) document.getElementById('cc-' + activeCluster).classList.remove('active');
+  activeCluster = c.id;
+  document.getElementById('cc-' + c.id).classList.add('active');
+  const box = document.getElementById('clusterDetail');
+  box.style.setProperty('--accent', clusterColors[c.cls]);
+  box.innerHTML = `<span class="close-x" onclick="closeCluster()">✕</span><div class="detail-head"><div class="detail-dot" style="background:${clusterColors[c.cls]}"></div>${c.icon} ${c.title}</div><div class="detail-label">Sub-ideas</div><div class="tags">${c.ideas.map(i=>`<span class="tag">${i}</span>`).join('')}</div><div class="detail-label">Example highlight</div><blockquote>${c.quote}</blockquote><div class="detail-label">Key books & authors</div><div class="books-list">${c.books}</div>`;
+  box.classList.add('visible');
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeCluster() {
+  if (activeCluster) document.getElementById('cc-' + activeCluster).classList.remove('active');
+  activeCluster = null;
+  document.getElementById('clusterDetail').classList.remove('visible');
+}
+
+// Arc rows
+function renderArc() {
+  const rows = document.getElementById('arcRows');
+  yearData.forEach(y => {
+    const div = document.createElement('div');
+    div.className = 'year-row';
+    div.innerHTML = `<div class="year-label">${y.year}</div><div class="year-count">${y.count.toLocaleString()} highlights</div><div class="year-themes"><div class="year-theme-tags">${y.themes.map(t=>`<span class="ytheme">${t}</span>`).join('')}${y.newThemes.map(t=>`<span class="ytheme new">↑ ${t}</span>`).join('')}${y.faded.map(t=>`<span class="ytheme faded">${t}</span>`).join('')}</div></div>`;
+    rows.appendChild(div);
+  });
+}
+
+// Books table
+function renderBooksTable() {
+  const tbody = document.getElementById('booksTableBody');
+  const maxCount = topBooks[0].count;
+  topBooks.forEach(b => {
+    const tr = document.createElement('tr');
+    const barW = Math.round((b.count / maxCount) * 120);
+    tr.innerHTML = `<td><span class="rank-num">${b.rank}</span></td><td class="book-title-cell">${b.title}</td><td class="book-author-cell">${b.author}</td><td><div class="count-bar-wrap"><div class="count-bar" style="width:${barW}px"></div><span class="count-num">${b.count}</span></div></td><td><span class="cat-badge cat-${b.cat}">${b.cat}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Compare lists
+function renderCompare() {
+  [['newItems',newItems],['persistentItems',persistentItems],['fadedItems',fadedItems]].forEach(([id,arr]) => {
+    const el = document.getElementById(id);
+    arr.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'compare-item';
+      d.innerHTML = item.text;
+      el.appendChild(d);
+    });
+  });
+}
+
+// Blind spots
+function renderBlind() {
+  const grid = document.getElementById('blindGrid');
+  blindSpots.forEach(b => {
+    const d = document.createElement('div');
+    d.className = 'blind-card';
+    d.style.setProperty('--bc', b.color);
+    d.innerHTML = `<div class="blind-head">${b.icon} ${b.title}</div><div class="blind-why">${b.why}</div><div class="detail-label">Recommended entry points</div><div class="blind-recs">${b.recs}</div>`;
+    grid.appendChild(d);
+  });
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────
+
+function initCharts() {
+  // Arc chart
+  new Chart(document.getElementById('arcChart'), {
+    type: 'bar',
+    data: {
+      labels: yearData.map(y => y.year),
+      datasets: [{
+        label: 'Highlights',
+        data: yearData.map(y => y.count),
+        backgroundColor: ['#4F7FFF','#5B8AFF','#6895FF','#FF6B35','#FF7A48','#F59E0B','#10B981','#8B5CF6','#EC4899'],
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { font: { size: 11 } }, grid: { color: '#f0f0f0' } },
+        x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Top 20 books horizontal bar
+  const top20 = topBooks.slice(0, 20);
+  new Chart(document.getElementById('booksChart'), {
+    type: 'bar',
+    data: {
+      labels: top20.map(b => b.title.length > 32 ? b.title.slice(0,32)+'…' : b.title),
+      datasets: [{
+        data: top20.map(b => b.count),
+        backgroundColor: '#4F7FFF',
+        borderRadius: 3,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, grid: { color: '#f5f5f5' } },
+        y: { ticks: { font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Highlights by type doughnut
+  new Chart(document.getElementById('hlChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Books (23,904)','Articles (5,811)','Tweets (608)','Supplementals (606)'],
+      datasets: [{
+        data: [23904, 5811, 608, 606],
+        backgroundColor: ['#4F7FFF','#F59E0B','#06B6D4','#84CC16'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } }
+      }
+    }
+  });
+
+  // Reader documents doughnut
+  new Chart(document.getElementById('readerChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Articles (2,443)','Tweets (434)','Videos (290)','Emails (134)','RSS (40)','PDFs (18)','Podcasts (9)'],
+      datasets: [{
+        data: [2443, 434, 290, 134, 40, 18, 9],
+        backgroundColor: ['#4F7FFF','#06B6D4','#EC4899','#F59E0B','#10B981','#8B5CF6','#EF4444'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } }
+      }
+    }
+  });
+
+  // HL breakdown rows
+  const breakdown = [
+    {label:'Books',count:23904,pct:77,sources:308,avg:77,color:'#4F7FFF'},
+    {label:'Articles',count:5811,pct:19,sources:888,avg:7,color:'#F59E0B'},
+    {label:'Tweets',count:608,pct:2,sources:91,avg:7,color:'#06B6D4'},
+    {label:'Supplementals',count:606,pct:2,sources:62,avg:10,color:'#84CC16'},
+  ];
+  const wrap = document.getElementById('hlBreakdownRows');
+  breakdown.forEach(b => {
+    const d = document.createElement('div');
+    d.style.cssText = 'margin-bottom:12px;';
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;"><span style="font-size:12px;font-weight:600;">${b.label}</span><span style="font-size:11px;color:#888;">${b.count.toLocaleString()} highlights · ${b.sources} sources · avg ${b.avg}/source</span></div><div style="height:6px;border-radius:3px;background:#f0f0f0;"><div style="height:100%;border-radius:3px;background:${b.color};width:${b.pct}%"></div></div>`;
+    wrap.appendChild(d);
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+renderClusters();
+renderArc();
+renderBooksTable();
+renderCompare();
+renderBlind();
+initCharts();
+</script>
+</body>
+</html>
